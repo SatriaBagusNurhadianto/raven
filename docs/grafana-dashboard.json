@@ -1,0 +1,20 @@
+{
+  "title": "Raven Backend",
+  "panels": [
+    {
+      "title": "Request rate",
+      "type": "graph",
+      "targets": [{"expr": "rate(raven_http_requests_total[5m])"}]
+    },
+    {
+      "title": "Error rate 5xx",
+      "type": "graph",
+      "targets": [{"expr": "rate(raven_http_requests_total{status=~\"5..\"}[5m])"}]
+    },
+    {
+      "title": "Latency p95",
+      "type": "graph",
+      "targets": [{"expr": "histogram_quantile(0.95, rate(raven_http_request_duration_seconds_bucket[5m]))"}]
+    }
+  ]
+}
