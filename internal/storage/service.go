@@ -6,10 +6,12 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -123,7 +125,10 @@ func (s *Service) Get(ctx context.Context, gameID, playerID, slot string) (*Slot
 		from saves where game_id=$1::uuid and player_id=$2::uuid and slot=$3`,
 		gameID, playerID, slot).Scan(&meta.Version, &blobRef, &meta.Checksum, &meta.Size, &enc, &meta.UpdatedAt, &isDeleted)
 	if err != nil {
-		return nil, &httpProblem{status: 404, message: "slot tidak ditemukan."}
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, &httpProblem{status: 404, message: "slot tidak ditemukan."}
+		}
+		return nil, err
 	}
 	if isDeleted {
 		return nil, &httpProblem{status: 404, message: "slot sudah dihapus."}
@@ -236,6 +241,13 @@ func (s *Service) Delta(ctx context.Context, gameID, playerID string, since time
 
 func (s *Service) blobPath(gameID, playerID, slot string, version int64) string {
 	safe := func(x string) string {
+		// remove path separators and dangerous components
+		x = strings.ReplaceAll(x, "/", "_")
+		x = strings.ReplaceAll(x, "\\", "_")
+		x = strings.ReplaceAll(x, "..", "_")
+		if x == "" {
+			x = "_"
+		}
 		r := []rune(x)
 		if len(r) > 64 {
 			r = r[:64]

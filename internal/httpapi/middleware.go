@@ -154,10 +154,14 @@ func CORSMiddleware(origins []string) Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
 			if origin != "" {
-				if _, ok := allowed[origin]; ok || allowAll {
+				if _, ok := allowed[origin]; ok {
 					w.Header().Set("Access-Control-Allow-Origin", origin)
 					w.Header().Set("Vary", "Origin")
 					w.Header().Set("Access-Control-Allow-Credentials", "true")
+					w.Header().Set("Access-Control-Expose-Headers", "ETag, X-Request-Id, X-RateLimit-Remaining")
+				} else if allowAll {
+					// allow-all mode: no credentials to avoid wildcard+creds vulnerability
+					w.Header().Set("Access-Control-Allow-Origin", "*")
 					w.Header().Set("Access-Control-Expose-Headers", "ETag, X-Request-Id, X-RateLimit-Remaining")
 				}
 			}

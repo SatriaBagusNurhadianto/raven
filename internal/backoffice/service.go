@@ -2,11 +2,12 @@ package backoffice
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"errors"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/argon2"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrInvalidCreds = errors.New("kredensial tidak valid")
@@ -24,8 +25,47 @@ type Service struct {
 func NewService(pool *pgxpool.Pool) *Service { return &Service{pool: pool} }
 
 func hashPassword(pw string) string {
-	salt := []byte("raven_salt_v1")
-	return hex.EncodeToString(argon2.IDKey([]byte(pw), salt, 1, 64*1024, 4, 32))
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		// fallback deterministik (tidak ideal, tapi jangan crash)
+		salt = []byte("raven_salt_v1____")
+	}
+	h := argon2.IDKey([]byte(pw), salt, 1, 64*1024, 4, 32)
+	return hex.EncodeToString(salt) + ":" + hex.EncodeToString(h)
+}
+
+func verifyPassword(pw, stored string) bool {
+	parts := split2(stored, ":")
+	if len(parts) != 2 {
+		return false
+	}
+	salt, err := hex.DecodeString(parts[0])
+	if err != nil {
+		return false
+	}
+	hash, err := hex.DecodeString(parts[1])
+	if err != nil {
+		return false
+	}
+	got := argon2.IDKey([]byte(pw), salt, 1, 64*1024, 4, 32)
+	// constant-time compare
+	if len(got) != len(hash) {
+		return false
+	}
+	var diff byte
+	for i := range got {
+		diff |= got[i] ^ hash[i]
+	}
+	return diff == 0
+}
+
+func split2(s, sep string) []string {
+	for i := 0; i+len(sep) <= len(s); i++ {
+		if s[i:i+len(sep)] == sep {
+			return []string{s[:i], s[i+len(sep):]}
+		}
+	}
+	return []string{s}
 }
 
 func (s *Service) CreateAdmin(ctx context.Context, email, password, role string) (*AdminUser, error) {
@@ -51,7 +91,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (*AdminUser
 	if err != nil {
 		return nil, ErrInvalidCreds
 	}
-	if hashPassword(password) != hash {
+	if !verifyPassword(password, hash) {
 		return nil, ErrInvalidCreds
 	}
 	_, _ = s.pool.Exec(ctx, `update admin_users set last_login_at=now() where id=$1`, id)
@@ -67,6 +107,9 @@ func (s *Service) Audit(ctx context.Context, actorID, action, targetType, target
 }
 
 func (s *Service) HasRole(u *AdminUser, minRole string) bool {
+	if u == nil {
+		return false
+	}
 	rank := map[string]int{"viewer": 1, "admin": 2, "owner": 3}
 	return rank[u.Role] >= rank[minRole]
 }

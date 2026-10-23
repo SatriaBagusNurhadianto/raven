@@ -186,6 +186,9 @@ func (s *Service) GetTop(ctx context.Context, gameID, boardKey string, limit int
 	if board.Sort == "asc" {
 		order = "asc"
 	}
+	if order != "asc" && order != "desc" {
+		order = "desc"
+	}
 	if limit <= 0 || limit > 100 {
 		limit = 10
 	}
@@ -226,6 +229,9 @@ func (s *Service) GetAroundMe(ctx context.Context, gameID, boardKey, playerID st
 	order := "desc"
 	if board.Sort == "asc" {
 		order = "asc"
+	}
+	if order != "asc" && order != "desc" {
+		order = "desc"
 	}
 	// find player's score
 	var playerScore float64
