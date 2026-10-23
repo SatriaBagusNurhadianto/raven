@@ -54,6 +54,18 @@ func (j *JWTIssuer) Verify(token string) (*Claims, error) {
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("format token tidak valid")
 	}
+	// verify alg header
+	hb, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("decode header: %w", err)
+	}
+	var hdr map[string]string
+	if err := json.Unmarshal(hb, &hdr); err != nil {
+		return nil, fmt.Errorf("parse header: %w", err)
+	}
+	if hdr["alg"] != "HS256" {
+		return nil, fmt.Errorf("alg tidak didukung: %s", hdr["alg"])
+	}
 	if j.sign(parts[0]+"."+parts[1]) != parts[2] {
 		return nil, fmt.Errorf("tanda tangan token tidak valid")
 	}

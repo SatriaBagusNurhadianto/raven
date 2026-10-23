@@ -166,10 +166,7 @@ func (s *Service) SubmitScore(ctx context.Context, gameID, boardKey, playerID st
 	if err != nil {
 		return nil, err
 	}
-	// fix submissions count properly
-	_, _ = s.pool.Exec(ctx, `
-		update scores set submissions=$1 where leaderboard_id=$2::uuid and period_key=$3 and player_id=$4::uuid`,
-		submissions, board.ID, pk, playerID)
+	// upsert already increments submissions atomically; no extra update needed
 
 	return &ScoreEntry{PlayerID: playerID, Score: newScore, BestScore: newBest, Submissions: submissions, Meta: meta, UpdatedAt: time.Now()}, nil
 }

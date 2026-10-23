@@ -126,12 +126,8 @@ func ServiceUnavailable(detail string) *Problem {
 // Internal membuat Problem 500. Detail teknis TIDAK ikut dikirim ke klien;
 // penyebab aslinya dicatat ke log oleh pemanggil.
 func Internal(cause error) *Problem {
-	detail := "Terjadi kesalahan internal."
-	if cause != nil {
-		// Hanya tipe error yang dibocorkan, bukan pesannya.
-		detail = fmt.Sprintf("Terjadi kesalahan internal (%T).", cause)
-	}
-	return NewProblem(500, TypeInternal, detail, "internal_error")
+	_ = cause
+	return NewProblem(500, TypeInternal, "Terjadi kesalahan internal.", "internal_error")
 }
 
 // WriteProblem menulis Problem sebagai response JSON beserta request ID.

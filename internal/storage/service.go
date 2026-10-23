@@ -44,12 +44,18 @@ func (s *Service) Put(ctx context.Context, in PutInput) (*PutResult, error) {
 		in.ContentType = "application/octet-stream"
 	}
 
-	// cek existing
+	// mulai transaksi sebelum cek existing (hindari TOCTOU)
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
 	var currentVersion int64
 	var exists bool
-	err := s.pool.QueryRow(ctx, `
-		select version from saves where game_id=$1::uuid and player_id=$2::uuid and slot=$3`,
-		in.GameID, in.PlayerID, in.Slot).Scan(&currentVersion)
+	err = tx.QueryRow(ctx, `
+		select version from saves where game_id=$1::uuid and player_id=$2::uuid and slot=$3
+		for update`, in.GameID, in.PlayerID, in.Slot).Scan(&currentVersion)
 	if err == nil {
 		exists = true
 	} else if err != pgx.ErrNoRows {
@@ -77,12 +83,6 @@ func (s *Service) Put(ctx context.Context, in PutInput) (*PutResult, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
 
 	if exists {
 		_, err = tx.Exec(ctx, `

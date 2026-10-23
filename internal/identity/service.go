@@ -283,7 +283,10 @@ func (s *Service) issueTokens(ctx context.Context, player *Player, gameID, userA
 	if err != nil {
 		return nil, err
 	}
-	familyID := newFamilyID()
+	familyID, err := newFamilyID()
+	if err != nil {
+		return nil, err
+	}
 	sess, err := s.Store.CreateSession(ctx, Session{
 		PlayerID:    player.ID,
 		GameID:      gameID,
@@ -317,12 +320,12 @@ func newRefreshToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b[:]), nil
 }
 
-func newFamilyID() string {
+func newFamilyID() (string, error) {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		return "family-unavailable"
+		return "", err
 	}
-	return hex.EncodeToString(b[:])
+	return hex.EncodeToString(b[:]), nil
 }
 
 func hashRefresh(token string) string {
