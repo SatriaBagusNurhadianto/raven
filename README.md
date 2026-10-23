@@ -68,7 +68,7 @@ Lihat `CONTRIBUTING.md` dan `docs/adr/0001-arsitektur-awal.md`.
 
 ## Status
 
-M0–M4 service layer selesai (identity, cloud save, leaderboard, tenant, backoffice). Lihat progress di vault Obsidian project Raven.
+M0–M6 sebagian selesai: identity, cloud save, leaderboard, tenant, backoffice, JS SDK, doctor, backup. Lihat progress di vault Obsidian project Raven.
 
 ## Lisensi
 
