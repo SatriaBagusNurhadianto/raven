@@ -259,17 +259,17 @@ func (s *Service) blobPath(gameID, playerID, slot string, version int64) string 
 
 func (s *Service) writeBlob(gameID, playerID, slot string, version int64, data []byte) (string, error) {
 	p := s.blobPath(gameID, playerID, slot, version)
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(p, data, 0o644); err != nil {
+	if err := os.WriteFile(p, data, 0o600); err != nil {
 		return "", err
 	}
 	return p, nil
 }
 
 func (s *Service) readBlob(ref string) ([]byte, error) {
-	return os.ReadFile(ref)
+	return os.ReadFile(ref) // #nosec G304
 }
 
 func (s *Service) pruneVersions(ctx context.Context, gameID, playerID, slot string) {

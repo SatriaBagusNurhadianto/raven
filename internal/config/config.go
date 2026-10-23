@@ -20,7 +20,7 @@ const (
 
 	// DefaultJWTSecret adalah placeholder yang SENGAJA tidak aman supaya
 	// produksi menolaknya. Jangan pernah dipakai di instance nyata.
-	DefaultJWTSecret = "dev-insecure-change-me"
+	DefaultJWTSecret = "dev-insecure-change-me" // #nosec G101
 
 	MinSaveBytes = 1 << 10  // 1 KiB
 	MaxSaveBytes = 16 << 20 // 16 MiB (batas atas FR-S1)
@@ -79,7 +79,7 @@ func Defaults() *Config {
 		HTTPAddr:      ":8080",
 		PublicBaseURL: "http://localhost:8080",
 
-		DatabaseURL:     "postgres://raven:raven@localhost:5432/raven?sslmode=disable",
+		DatabaseURL:     "postgres://raven:raven@localhost:5432/raven?sslmode=disable", // #nosec G101
 		DBMaxConns:      20,
 		AutoMigrate:     true,
 		WaitForDB:       30 * time.Second,
@@ -307,7 +307,7 @@ func setInt32(getenv func(string) string, key string, dst *int32) error {
 	}
 	// Hanya tulis bila env benar-benar diisi; kalau tidak, default tetap utuh.
 	if strings.TrimSpace(getenv(key)) != "" {
-		*dst = int32(n)
+		*dst = int32(n) // #nosec G115
 	}
 	return nil
 }

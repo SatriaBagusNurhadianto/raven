@@ -56,10 +56,19 @@ func VerifyPassword(password, encoded string) bool {
 		}
 		switch k {
 		case "m":
+			if n > 1<<32-1 {
+				return false
+			}
 			memory = uint32(n)
 		case "t":
+			if n > 1<<32-1 {
+				return false
+			}
 			timeCost = uint32(n)
 		case "p":
+			if n > 255 {
+				return false
+			}
 			threads = uint8(n)
 		}
 	}
@@ -71,7 +80,7 @@ func VerifyPassword(password, encoded string) bool {
 	if err != nil {
 		return false
 	}
-	key := argon2.IDKey([]byte(password), salt, timeCost, memory, threads, uint32(len(expected)))
+	key := argon2.IDKey([]byte(password), salt, timeCost, memory, threads, uint32(len(expected))) // #nosec G115
 	return subtle.ConstantTimeCompare(key, expected) == 1
 }
 

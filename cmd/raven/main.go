@@ -155,14 +155,14 @@ func cmdDoctor(args []string) error {
 		// Rate limit
 		add("rate_limit", cfg.RateLimit.Enabled, map[bool]string{true: "aktif", false: "nonaktif"}[cfg.RateLimit.Enabled])
 		// Blob dir
-		if err := os.MkdirAll(cfg.BlobDir, 0o755); err != nil {
+		if err := os.MkdirAll(cfg.BlobDir, 0o750); err != nil {
 			add("blob_dir", false, err.Error())
 		} else {
 			tmp := cfg.BlobDir + "/.doctor"
-			if err := os.WriteFile(tmp, []byte("ok"), 0o644); err != nil {
+			if err := os.WriteFile(tmp, []byte("ok"), 0o600); err != nil {
 				add("blob_dir", false, err.Error())
 			} else {
-				os.Remove(tmp)
+				_ = os.Remove(tmp)
 				add("blob_dir", true, cfg.BlobDir)
 			}
 		}
