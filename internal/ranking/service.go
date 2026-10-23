@@ -116,39 +116,40 @@ func (s *Service) SubmitScore(ctx context.Context, gameID, boardKey, playerID st
 	pk := periodKey(board.ResetPeriod, now)
 
 	// upsert
-	var bestScore float64
+	var currentScore, bestScore float64
 	var submissions int64
 	err = s.pool.QueryRow(ctx, `
-		select best_score, submissions from scores
+		select score, best_score, submissions from scores
 		where leaderboard_id=$1::uuid and period_key=$2 and player_id=$3::uuid`,
-		board.ID, pk, playerID).Scan(&bestScore, &submissions)
+		board.ID, pk, playerID).Scan(&currentScore, &bestScore, &submissions)
 	exists := err == nil
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
 	}
 
-	newBest := score
 	newScore := score
+	newBest := score
 	switch board.ScoreMode {
 	case "best":
-		if exists && bestScore > score && board.Sort == "desc" {
-			newBest = bestScore
+		if exists {
+			if board.Sort == "desc" && bestScore > score {
+				newScore = bestScore
+				newBest = bestScore
+			} else if board.Sort == "asc" && bestScore < score {
+				newScore = bestScore
+				newBest = bestScore
+			}
 		}
-		if exists && bestScore < score && board.Sort == "asc" {
-			newBest = bestScore
-		}
-		newScore = newBest
 	case "latest":
 		newScore = score
 		newBest = score
 	case "sum":
 		if exists {
-			newScore = score + bestScore
+			newScore = currentScore + score
 		}
 		newBest = newScore
 	}
 	if !exists {
-		bestScore = score
 		submissions = 0
 	}
 	submissions++
