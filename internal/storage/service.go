@@ -298,8 +298,13 @@ func (s *Service) pruneVersions(ctx context.Context, gameID, playerID, slot stri
 	if len(all) <= s.keepVersions {
 		return
 	}
-	for _, x := range all[s.keepVersions:] {
-		_, _ = s.pool.Exec(ctx, "delete from save_versions where id=$1", x.id)
+	toDelete := all[s.keepVersions:]
+	ids := make([]int64, 0, len(toDelete))
+	for _, x := range toDelete {
+		ids = append(ids, x.id)
+	}
+	_, _ = s.pool.Exec(ctx, "delete from save_versions where id = any($1)", ids)
+	for _, x := range toDelete {
 		_ = os.Remove(x.ref)
 	}
 }

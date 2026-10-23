@@ -69,6 +69,14 @@ func (h *Health) ReadinessHandler() http.HandlerFunc {
 			wg.Add(1)
 			go func(c Check) {
 				defer wg.Done()
+				defer func() {
+					if rec := recover(); rec != nil {
+						mu.Lock()
+						results[c.Name] = "gagal: panic"
+						ready = false
+						mu.Unlock()
+					}
+				}()
 				status := "ok"
 				if err := c.Fn(ctx); err != nil {
 					status = "gagal: " + err.Error()
