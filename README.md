@@ -35,9 +35,10 @@ go run ./cmd/raven serve       # jalan di :8080
 | `GET /readyz` | Readiness (DB) |
 | `GET /metrics` | Metrik Prometheus |
 | `GET /v1/meta` | Info build |
-| `/v1/auth/*` | Auth (M1 — dalam pengembangan) |
-| `/v1/saves/*` | Cloud save (M2) |
-| `/v1/leaderboards/*` | Leaderboard (M3) |
+| `/v1/auth/*` | Auth (M1 — selesai: guest, register/login, refresh rotation, link, ban) |
+| `/v1/saves/*` | Cloud save (M2 — selesai: put/get/list/versions/delete/delta, If-Match) |
+| `/v1/leaderboards/*` | Leaderboard (M3 — selesai: submit score, top N, around-me) |
+| `/v1/...` | Multi-tenant (M4 — tenant resolution dari API key selesai) |
 
 Format error seragam: RFC 9457 Problem Details (`application/problem+json`).
 
