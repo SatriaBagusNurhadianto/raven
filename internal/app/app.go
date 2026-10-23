@@ -19,6 +19,7 @@ import (
 	"github.com/chava/raven/internal/httpapi"
 	"github.com/chava/raven/internal/identity"
 	"github.com/chava/raven/internal/obs"
+	"github.com/chava/raven/internal/storage"
 )
 
 // App adalah konteks aplikasi yang sudah terinisialisasi.
@@ -177,6 +178,17 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 			}
 			backofficeHandler.CreateAdmin(w, r)
 		})
+	}
+
+	// --- Storage (M2) ---
+	if a.DB != nil {
+		storageSvc := storage.NewService(a.DB.Pool, cfg.BlobDir, 5)
+		storageHandler := storage.NewHandler(storageSvc)
+		auth := authMW.Handle
+		router.Handle("PUT", "/v1/saves/{slot}", "saves.put", auth(http.HandlerFunc(storageHandler.Put)))
+		router.Handle("GET", "/v1/saves/{slot}", "saves.get", auth(http.HandlerFunc(storageHandler.Get)))
+		router.Handle("GET", "/v1/saves", "saves.list", auth(http.HandlerFunc(storageHandler.List)))
+		router.Handle("DELETE", "/v1/saves/{slot}", "saves.delete", auth(http.HandlerFunc(storageHandler.Delete)))
 	}
 
 	a.RateLimit = rl
