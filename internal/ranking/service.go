@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -121,8 +123,8 @@ func (s *Service) SubmitScore(ctx context.Context, gameID, boardKey, playerID st
 		where leaderboard_id=$1::uuid and period_key=$2 and player_id=$3::uuid`,
 		board.ID, pk, playerID).Scan(&bestScore, &submissions)
 	exists := err == nil
-	if err != nil && err.Error() != "no rows in result set" {
-		// pgx ErrNoRows
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, err
 	}
 
 	newBest := score
