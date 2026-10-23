@@ -16,6 +16,7 @@ import (
 	"log/slog"
 
 	"github.com/chava/raven/internal/httpapi"
+	"github.com/chava/raven/internal/identity"
 	"github.com/chava/raven/internal/obs"
 )
 
@@ -109,6 +110,61 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 			"started_at": health.StartedAt.UTC().Format(time.RFC3339),
 		})
 	})
+
+	// --- Identity (M1) ---
+	identityStore := identity.NewStore(nil)
+	if a.DB != nil {
+		identityStore = identity.NewStore(a.DB.Pool)
+	}
+	jwtIssuer := &identity.JWTIssuer{Secret: []byte(cfg.JWTSecret), TTL: cfg.AccessTokenTTL}
+	identitySvc := &identity.Service{
+		Store:       identityStore,
+		JWT:         jwtIssuer,
+		AccessTTL:   cfg.AccessTokenTTL,
+		RefreshTTL:  cfg.RefreshTokenTTL,
+		BanCacheTTL: 30 * time.Second,
+	}
+	identityHandler := identity.NewHandler(identitySvc)
+	authMW := identity.NewAuthMiddleware(jwtIssuer, identitySvc)
+
+	router.Post("/v1/auth/guest", "auth.guest", identityHandler.Guest)
+	router.Post("/v1/auth/register", "auth.register", identityHandler.Register)
+	router.Post("/v1/auth/login", "auth.login", identityHandler.Login)
+	router.Post("/v1/auth/refresh", "auth.refresh", identityHandler.Refresh)
+	router.Post("/v1/auth/logout", "auth.logout", identityHandler.Logout)
+	router.Handle("POST", "/v1/auth/logout-all", "auth.logout_all", authMW.Handle(http.HandlerFunc(identityHandler.LogoutAll)))
+	router.Handle("POST", "/v1/auth/link", "auth.link", authMW.Handle(http.HandlerFunc(identityHandler.Link)))
+
+	adminBan := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if cfg.AdminToken == "" || r.Header.Get("X-Admin-Token") != cfg.AdminToken {
+			httpapi.WriteProblem(w, r, httpapi.Forbidden("Admin token tidak valid."))
+			return
+		}
+		var body struct {
+			PlayerID string `json:"player_id"`
+			Reason   string `json:"reason"`
+			Ban      bool   `json:"ban"`
+		}
+		if prob := httpapi.DecodeJSON(r, 64*1024, &body); prob != nil {
+			httpapi.WriteProblem(w, r, prob)
+			return
+		}
+		if body.Ban {
+			if err := identitySvc.Ban(r.Context(), body.PlayerID, body.Reason); err != nil {
+				httpapi.WriteProblem(w, r, httpapi.ProblemFromError(err))
+				return
+			}
+		} else {
+			if err := identitySvc.Unban(r.Context(), body.PlayerID); err != nil {
+				httpapi.WriteProblem(w, r, httpapi.ProblemFromError(err))
+				return
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	router.Post("/v1/admin/players/ban", "admin.players.ban", adminBan)
+
+	_ = identityStore
 
 	a.RateLimit = rl
 	a.Server = &httpapi.Server{

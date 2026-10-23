@@ -66,6 +66,7 @@ type Config struct {
 	SaveVersions int
 	BlobDir      string
 
+	AdminToken     string
 	TLS            TLS
 	CORSOrigins    []string
 	TrustedProxies []string
@@ -114,6 +115,7 @@ func Load(getenv func(string) string) (*Config, error) {
 	setString(getenv, "RAVEN_LOG_LEVEL", &c.LogLevel)
 	setString(getenv, "RAVEN_JWT_SECRET", &c.JWTSecret)
 	setString(getenv, "RAVEN_BLOB_DIR", &c.BlobDir)
+	setString(getenv, "RAVEN_ADMIN_TOKEN", &c.AdminToken)
 
 	appendErr(&errs, setBool(getenv, "RAVEN_AUTO_MIGRATE", &c.AutoMigrate))
 	appendErr(&errs, setBool(getenv, "RAVEN_RATE_LIMIT_ENABLED", &c.RateLimit.Enabled))
