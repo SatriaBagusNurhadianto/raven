@@ -1,0 +1,94 @@
+openapi: 3.1.0
+info:
+  title: Raven API
+  version: 1.0.0
+  description: |
+    Self-hosted game backend. Single source of truth untuk SDK (FR-K2).
+    Format error seragam: RFC 9457 Problem Details (application/problem+json).
+servers:
+  - url: http://localhost:8080
+    description: Lokal
+paths:
+  /healthz:
+    get:
+      summary: Liveness
+      responses:
+        "200":
+          description: OK
+  /readyz:
+    get:
+      summary: Readiness
+      responses:
+        "200": { description: Siap }
+        "503": { description: Tidak siap }
+  /metrics:
+    get:
+      summary: Metrik Prometheus
+      responses:
+        "200": { description: OK }
+  /v1/meta:
+    get:
+      summary: Info build
+      responses:
+        "200": { description: OK }
+  /v1/auth/guest:
+    post:
+      summary: Buat akun anonim (FR-A1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_id]
+              properties:
+                device_id: { type: string }
+      responses:
+        "200":
+          description: Token + player
+  /v1/saves/{slot}:
+    put:
+      summary: Simpan slot (FR-S1, FR-S2)
+      parameters:
+        - in: path
+          name: slot
+          required: true
+          schema: { type: string }
+        - in: header
+          name: If-Match
+          schema: { type: string }
+      responses:
+        "200": { description: Versi baru }
+        "409": { description: Konflik versi }
+    get:
+      summary: Ambil slot (FR-S1)
+      parameters:
+        - in: path
+          name: slot
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Body + ETag }
+  /v1/leaderboards/{id}/scores:
+    post:
+      summary: Kirim skor (FR-L2)
+      responses:
+        "200": { description: Rank + best }
+  /v1/leaderboards/{id}:
+    get:
+      summary: Top N leaderboard (FR-L3)
+      responses:
+        "200": { description: Entries }
+components:
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        request_id: { type: string }
+        code: { type: string }

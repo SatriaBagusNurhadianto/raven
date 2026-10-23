@@ -1,0 +1,24 @@
+# Build
+bin/
+*.exe
+*.test
+
+# Data
+data/
+*.db
+
+# Env
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/

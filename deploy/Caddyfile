@@ -1,0 +1,15 @@
+# Caddy memberikan TLS otomatis (Let's Encrypt) di depan Raven.
+{
+    email {$CADDY_EMAIL:admin@example.com}
+}
+
+{$RAVEN_DOMAIN:localhost} {
+    reverse_proxy raven:8080
+    encode gzip zstd
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+    }
+}

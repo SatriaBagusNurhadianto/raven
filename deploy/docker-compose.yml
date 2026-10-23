@@ -1,0 +1,54 @@
+# Raven + Postgres + Caddy (reverse proxy dengan TLS otomatis).
+# Jalankan: docker compose up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: raven
+      POSTGRES_PASSWORD: raven
+      POSTGRES_DB: raven
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raven"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  raven:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment:
+      RAVEN_ENV: production
+      RAVEN_DATABASE_URL: postgres://raven:raven@postgres:5432/raven?sslmode=disable
+      RAVEN_TLS_TERMINATED: "true"
+      RAVEN_JWT_SECRET: change-me-in-production-at-least-32-chars
+      RAVEN_AUTO_MIGRATE: "true"
+      RAVEN_BLOB_DIR: /data/blobs
+    volumes:
+      - ravendata:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - raven
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  ravendata:
+  caddydata:
+  caddyconfig:

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: raven
+          POSTGRES_PASSWORD: raven
+          POSTGRES_DB: raven
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U raven"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+      - name: gofmt check
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "File tidak terformat:"; gofmt -l .
+            exit 1
+          fi
+      - name: go vet
+        run: go vet ./...
+      - name: unit tests
+        run: go test ./... -race -count=1 -short
+      - name: integration tests (db)
+        env:
+          RAVEN_TEST_DATABASE_URL: postgres://raven:raven@localhost:5432/raven?sslmode=disable
+        run: go test ./internal/db/ -tags=integration -v -count=1
+      - name: build
+        run: go build ./...
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker build
+        run: docker build -f deploy/Dockerfile -t raven:ci .
