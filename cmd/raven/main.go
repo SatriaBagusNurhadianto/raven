@@ -33,6 +33,8 @@ func main() {
 		err = cmdMigrate(args)
 	case "doctor":
 		err = cmdDoctor(args)
+	case "backup":
+		err = cmdBackup(args)
 	case "version":
 		fmt.Printf("raven %s (commit %s, built %s)\n", version, commit, date)
 	case "help", "-h", "--help":
