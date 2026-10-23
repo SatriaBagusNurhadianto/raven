@@ -10,8 +10,8 @@ func TestLoadMigrationsSortedAndHasDown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadMigrations gagal: %v", err)
 	}
-	if len(migs) != 1 {
-		t.Fatalf("jumlah migrasi = %d, mau 1", len(migs))
+	if len(migs) != 2 {
+		t.Fatalf("jumlah migrasi = %d, mau 2", len(migs))
 	}
 	if migs[0].Version != 1 {
 		t.Errorf("versi = %d, mau 1", migs[0].Version)
