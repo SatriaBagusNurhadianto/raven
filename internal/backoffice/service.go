@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"golang.org/x/crypto/argon2"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/argon2"
 )
 
 var ErrInvalidCreds = errors.New("kredensial tidak valid")

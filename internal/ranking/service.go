@@ -20,15 +20,15 @@ func (e *httpProblem) Error() string { return e.message }
 var ErrNotFound = errors.New("tidak ditemukan")
 
 type Board struct {
-	ID          string
-	GameID      string
-	Key         string
-	Name        string
-	Sort        string // asc/desc
-	ResetPeriod string
-	ScoreMode   string // best/latest/sum
-	MinScore    *int64
-	MaxScore    *int64
+	ID           string
+	GameID       string
+	Key          string
+	Name         string
+	Sort         string // asc/desc
+	ResetPeriod  string
+	ScoreMode    string // best/latest/sum
+	MinScore     *int64
+	MaxScore     *int64
 	MetaMaxBytes int
 }
 

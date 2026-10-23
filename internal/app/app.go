@@ -165,7 +165,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	})
 	router.Post("/v1/admin/players/ban", "admin.players.ban", adminBan)
 
-// --- Backoffice (M4) ---
+	// --- Backoffice (M4) ---
 	if a.DB != nil {
 		backofficeSvc := backoffice.NewService(a.DB.Pool)
 		backofficeHandler := backoffice.NewHandler(backofficeSvc)

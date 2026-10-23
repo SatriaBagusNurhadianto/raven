@@ -12,9 +12,9 @@ import (
 var ErrInvalidKey = errors.New("api key tidak valid")
 
 type Game struct {
-	ID     string
-	Name   string
-	Slug   string
+	ID       string
+	Name     string
+	Slug     string
 	Settings map[string]any
 }
 
