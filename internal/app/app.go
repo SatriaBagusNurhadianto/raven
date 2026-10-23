@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/chava/raven/internal/backoffice"
 	"github.com/chava/raven/internal/config"
 	"github.com/chava/raven/internal/db"
 	"log/slog"
@@ -164,7 +165,19 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	})
 	router.Post("/v1/admin/players/ban", "admin.players.ban", adminBan)
 
-	_ = identityStore
+// --- Backoffice (M4) ---
+	if a.DB != nil {
+		backofficeSvc := backoffice.NewService(a.DB.Pool)
+		backofficeHandler := backoffice.NewHandler(backofficeSvc)
+		router.Post("/v1/admin/login", "admin.login", backofficeHandler.Login)
+		router.Post("/v1/admin/users", "admin.users.create", func(w http.ResponseWriter, r *http.Request) {
+			if cfg.AdminToken == "" || r.Header.Get("X-Admin-Token") != cfg.AdminToken {
+				httpapi.WriteProblem(w, r, httpapi.Forbidden("Admin token tidak valid."))
+				return
+			}
+			backofficeHandler.CreateAdmin(w, r)
+		})
+	}
 
 	a.RateLimit = rl
 	a.Server = &httpapi.Server{
